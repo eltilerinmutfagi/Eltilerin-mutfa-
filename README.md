@@ -1,152 +1,274 @@
-
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-<meta charset="UTF-8">
-<title>Etlilerin Mutfağı | Online Sipariş</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<style>
-body{margin:0;font-family:Arial;background:#fff;color:#333}
-header{background:#f3e8d8;text-align:center;padding:22px}
-header img{max-width:150px}
-h2{color:#8a6f4d}
-.container{max-width:1200px;margin:auto;padding:20px}
-.products{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px}
-.card{border:1px solid #e0d4c2;border-radius:12px;padding:14px;text-align:center}
-.price{font-weight:bold;color:#8a6f4d;margin:6px 0}
-.unit{font-size:13px;color:#777}
-.qty{display:flex;justify-content:center;align-items:center;margin:8px 0}
-.qty button{padding:6px 12px;font-size:18px}
-.qty span{margin:0 10px;font-size:18px}
-.add{background:#8a6f4d;color:#fff;border:none;padding:10px 14px;border-radius:6px;cursor:pointer}
-#cart{margin-top:28px;border-top:2px solid #e0d4c2;padding-top:18px}
-.complete{background:#25D366;color:#fff;padding:14px 24px;border:none;border-radius:30px;font-size:18px;cursor:pointer}
-.footer{background:#f3e8d8;text-align:center;padding:16px;margin-top:30px}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Eltilerin Mutfağı | Sipariş Hattı</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #fcfcfc;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .product-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            border: 1px solid #f0f0f0;
+        }
+
+        .cart-bar {
+            position: fixed;
+            bottom: 25px;
+            left: 5%;
+            width: 90%;
+            background: #111827;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 20px;
+            display: none;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 999;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .category-header {
+            font-weight: 800;
+            font-size: 1.1rem;
+            color: #1f2937;
+            margin: 25px 0 15px 5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .category-header::before {
+            content: '';
+            width: 4px;
+            height: 20px;
+            background: #ef4444;
+            border-radius: 2px;
+        }
+
+        #orderModal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            align-items: flex-end; /* Mobil için aşağıdan açılan menü tipi */
+        }
+
+        .modal-content {
+            background: white;
+            width: 100%;
+            border-radius: 30px 30px 0 0;
+            padding: 24px;
+            max-height: 85vh;
+            overflow-y: auto;
+            animation: slideModal 0.3s ease-out;
+        }
+
+        @keyframes slideModal {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+    </style>
 </head>
-<body>
+<body class="pb-32">
 
-<header>
-  <img src="logo.jpg">
-  <p><strong>Hemen Sipariş Ver</strong></p>
-</header>
+    <!-- Header -->
+    <header class="bg-white/80 backdrop-blur-md border-b sticky top-0 z-50 px-4 py-4">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-red-600 tracking-tight">Eltilerin Mutfağı</h1>
+            <a href="tel:05305956681" class="w-10 h-10 bg-red-50 text-red-600 rounded-full flex items-center justify-center">
+                <i class="fas fa-phone-alt"></i>
+            </a>
+        </div>
+    </header>
 
-<div class="container">
-<h2>Yemekler</h2>
-<div class="products" id="products"></div>
+    <!-- Ana Menü -->
+    <main class="container mx-auto px-4">
+        <div id="menu-container"></div>
+    </main>
 
-<div id="cart">
-<h2>Sepet</h2>
-<ul id="cartList"></ul>
-<h3 id="total">Toplam: 0 ₺</h3>
-<button class="complete" onclick="sendWhatsApp()">Siparişi Tamamla</button>
-</div>
-</div>
+    <!-- Sepet Çubuğu -->
+    <div id="cartBar" class="cart-bar">
+        <div class="flex flex-col">
+            <span id="cartInfo" class="text-xs text-gray-400">0 ürün seçildi</span>
+            <span id="totalPriceDisplay" class="font-bold text-lg text-white">0 ₺</span>
+        </div>
+        <button onclick="showSummary()" class="bg-red-600 px-6 py-3 rounded-xl font-bold text-sm">
+            Siparişi Tamamla <i class="fas fa-arrow-right ml-1"></i>
+        </button>
+    </div>
 
-<div class="footer">© 2026 Etlilerin Mutfağı</div>
+    <!-- Sepet Modalı -->
+    <div id="orderModal" onclick="if(event.target == this) closeModal()">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold">Sipariş Özeti</h3>
+                <button onclick="closeModal()" class="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full">&times;</button>
+            </div>
+            
+            <div id="summaryList" class="space-y-4 mb-8"></div>
 
-<script>
-const products = [
-{name:"İçli Köfte",price:120,unit:"Adet"},
-{name:"Kalem Böreği",price:12,unit:"Adet"},
-{name:"Gül Böreği",price:25,unit:"Adet"},
-{name:"Poğaça",price:15,unit:"Adet"},
-{name:"Saçaklı Poğaça",price:20,unit:"Adet"},
-{name:"Perde Pilavı",price:100,unit:"Adet"},
-{name:"Cheesecake (Porsiyon)",price:100,unit:"Adet"},
-{name:"Magnolya",price:85,unit:"Adet"},
-{name:"Fırın Sütlaç",price:80,unit:"Adet"},
-{name:"Brownie",price:250,unit:"Adet"},
+            <div class="space-y-3">
+                <div class="flex justify-between text-lg">
+                    <span class="text-gray-500">Toplam</span>
+                    <span id="finalPrice" class="font-bold text-red-600">0 ₺</span>
+                </div>
+                <button onclick="sendToWhatsApp()" class="w-full bg-[#25D366] text-white py-4 rounded-2xl font-bold text-lg flex items-center justify-center gap-2 active:scale-95 transition-transform">
+                    <i class="fab fa-whatsapp text-2xl"></i>
+                    WhatsApp'tan Siparişi Ver
+                </button>
+            </div>
+        </div>
+    </div>
 
-{name:"Mantı",price:1200,unit:"KG"},
-{name:"Fellah Köftesi",price:480,unit:"KG"},
-{name:"Mercimek Köftesi",price:480,unit:"KG"},
-{name:"Kısır",price:420,unit:"KG"},
+    <script>
+        const WHATSAPP_NUMBER = "905305956681";
+        
+        const menu = [
+            { cat: "Tane ile Satılanlar", items: [
+                { n: "İçli Köfte", p: 120, u: "Tane" }, { n: "Kalem Böreği", p: 12, u: "Tane" },
+                { n: "Gül Böreği", p: 25, u: "Tane" }, { n: "Poğaça", p: 15, u: "Tane" },
+                { n: "Saçaklı Poğaça", p: 20, u: "Tane" }, { n: "Perde Pilavı", p: 100, u: "Tane" },
+                { n: "Porsiyon Cheesecake", p: 100, u: "Tane" }, { n: "Magnolya", p: 85, u: "Tane" },
+                { n: "Fırın Sütlaç", p: 80, u: "Tane" }, { n: "Brownie", p: 250, u: "Tane" },
+                { n: "Feselli", p: 90, u: "Tane" }
+            ]},
+            { cat: "Kilo ile Satılanlar", items: [
+                { n: "Mantı", p: 1200, u: "KG" }, { n: "Fellah Köftesi", p: 480, u: "KG" },
+                { n: "Mercimek Köftesi", p: 480, u: "KG" }, { n: "Kısır", p: 420, u: "KG" },
+                { n: "Etli Sarma", p: 750, u: "KG" }, { n: "Zeytinyağlı Sarma", p: 650, u: "KG" },
+                { n: "Üzümlü Fıstıklı Sarma", p: 1300, u: "KG" }, { n: "Kıymalı Börek (Kilo)", p: 1250, u: "KG" },
+                { n: "Patatesli Börek (Kilo)", p: 650, u: "KG" }, { n: "Ispanaklı Börek (Kilo)", p: 650, u: "KG" },
+                { n: "Cheesecake Büyük", p: 900, u: "KG" }, { n: "Kıbrıs Tatlısı", p: 800, u: "KG" },
+                { n: "Gelin Pastası", p: 700, u: "KG" }, { n: "Islak Kek", p: 600, u: "KG" },
+                { n: "Kadayıflı Muhallebi", p: 750, u: "KG" }, { n: "Şekerpare", p: 550, u: "KG" }
+            ]},
+            { cat: "Tepsi & Borcam", items: [
+                { n: "Fıstıklı Baklava (Tepsi)", p: 3000, u: "Tepsi" }, { n: "Cevizli Baklava (Tepsi)", p: 2250, u: "Tepsi" },
+                { n: "Soğuk Baklava (Tepsi)", p: 3250, u: "Tepsi" }, { n: "Peynirli Börek (Borcam)", p: 1100, u: "Borcam" },
+                { n: "Patatesli Börek (Borcam)", p: 850, u: "Borcam" }, { n: "Kıymalı Börek (Borcam)", p: 1150, u: "Borcam" },
+                { n: "Ispanaklı Börek (Borcam)", p: 850, u: "Borcam" }
+            ]}
+        ];
 
-{name:"Etli Sarma",price:750,unit:"KG"},
-{name:"Zeytinyağlı Sarma",price:650,unit:"KG"},
-{name:"Üzümlü Fıstıklı Sarma",price:1300,unit:"KG"},
+        let cart = {};
 
-{name:"El Açması Kıymalı Börek",price:1250,unit:"KG"},
-{name:"El Açması Patatesli Börek",price:650,unit:"KG"},
-{name:"El Açması Ispanaklı Börek",price:650,unit:"KG"},
+        function initMenu() {
+            const container = document.getElementById('menu-container');
+            menu.forEach(group => {
+                const head = document.createElement('h2');
+                head.className = "category-header";
+                head.innerText = group.cat;
+                container.appendChild(head);
 
-{name:"Cheesecake (Büyük)",price:900,unit:"KG"},
-{name:"Kıbrıs Tatlısı",price:800,unit:"KG"},
-{name:"Gelin Pastası",price:700,unit:"KG"},
-{name:"Islak Kek",price:600,unit:"KG"},
-{name:"Kadayıflı Muhallebi",price:750,unit:"KG"},
+                const grid = document.createElement('div');
+                grid.className = "grid grid-cols-1 gap-3";
+                
+                group.items.forEach(item => {
+                    const el = document.createElement('div');
+                    el.className = "product-card p-4 flex justify-between items-center";
+                    el.innerHTML = `
+                        <div class="flex-1">
+                            <div class="font-bold text-gray-800 text-sm">${item.n}</div>
+                            <div class="text-red-600 font-bold text-sm">${item.p} ₺ <span class="text-[10px] text-gray-400 font-normal">/ ${item.u}</span></div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <div id="btn-${item.n.replace(/\s/g,'')}" class="flex items-center bg-gray-100 rounded-full p-1 ${cart[item.n] ? '' : 'hidden'}">
+                                <button onclick="addToCart('${item.n}', ${item.p}, -1)" class="w-8 h-8 flex items-center justify-center font-bold text-red-600">-</button>
+                                <span class="px-2 font-bold text-sm">${cart[item.n]?.qty || 0}</span>
+                                <button onclick="addToCart('${item.n}', ${item.p}, 1)" class="w-8 h-8 flex items-center justify-center font-bold text-red-600">+</button>
+                            </div>
+                            <button id="add-${item.n.replace(/\s/g,'')}" onclick="addToCart('${item.n}', ${item.p}, 1)" class="bg-red-600 text-white w-10 h-10 rounded-full ${cart[item.n] ? 'hidden' : ''}">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    `;
+                    grid.appendChild(el);
+                });
+                container.appendChild(grid);
+            });
+        }
 
-{name:"Fıstıklı Baklava",price:3000,unit:"Tepsi"},
-{name:"Cevizli Baklava",price:2250,unit:"Tepsi"},
-{name:"Soğuk Baklava",price:3250,unit:"Tepsi"},
+        function addToCart(name, price, change) {
+            if (!cart[name]) cart[name] = { qty: 0, price: price };
+            cart[name].qty += change;
+            if (cart[name].qty <= 0) delete cart[name];
+            updateUI();
+        }
 
-{name:"Peynirli Börek",price:1100,unit:"Borcam"},
-{name:"Patatesli Börek",price:850,unit:"Borcam"},
-{name:"Kıymalı Börek",price:1150,unit:"Borcam"},
-{name:"Ispanaklı Börek",price:850,unit:"Borcam"},
+        function updateUI() {
+            let total = 0, count = 0;
+            
+            // Tüm butonları sıfırla/güncelle
+            document.querySelectorAll('[id^="btn-"]').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('[id^="add-"]').forEach(el => el.classList.remove('hidden'));
 
-{name:"Şekerpare",price:550,unit:"KG"},
-{name:"Feselli",price:90,unit:"Adet"}
-];
+            Object.keys(cart).forEach(n => {
+                total += cart[n].qty * cart[n].price;
+                count += cart[n].qty;
+                const safeName = n.replace(/\s/g,'');
+                document.getElementById('btn-'+safeName).classList.remove('hidden');
+                document.getElementById('btn-'+safeName).querySelector('span').innerText = cart[n].qty;
+                document.getElementById('add-'+safeName).classList.add('hidden');
+            });
 
-let cart = {};
-let quantities = Array(products.length).fill(1);
-const container = document.getElementById("products");
+            const bar = document.getElementById('cartBar');
+            if (count > 0) {
+                bar.style.display = 'flex';
+                document.getElementById('cartInfo').innerText = count + " ürün seçildi";
+                document.getElementById('totalPriceDisplay').innerText = total + " ₺";
+            } else {
+                bar.style.display = 'none';
+            }
+        }
 
-products.forEach((p,i)=>{
-const card=document.createElement("div");
-card.className="card";
-card.innerHTML=`
-<h3>${p.name}</h3>
-<div class="unit">${p.unit}</div>
-<div class="price">${p.price} ₺</div>
-<div class="qty">
-<button onclick="changeQty(${i},-1)">-</button>
-<span id="q${i}">1</span>
-<button onclick="changeQty(${i},1)">+</button>
-</div>
-<button class="add" onclick="addCart(${i})">Sepete Ekle</button>`;
-container.appendChild(card);
-});
+        function showSummary() {
+            const list = document.getElementById('summaryList');
+            list.innerHTML = '';
+            let total = 0;
+            Object.keys(cart).forEach(n => {
+                const sub = cart[n].qty * cart[n].price;
+                total += sub;
+                list.innerHTML += `<div class="flex justify-between border-b pb-2"><div><p class="font-bold text-sm">${n}</p><p class="text-xs text-gray-500">${cart[n].qty} Adet x ${cart[n].price} ₺</p></div><span class="font-bold">${sub} ₺</span></div>`;
+            });
+            document.getElementById('finalPrice').innerText = total + " ₺";
+            document.getElementById('orderModal').style.display = 'flex';
+        }
 
-function changeQty(i,v){
-quantities[i]=Math.max(1,quantities[i]+v);
-document.getElementById("q"+i).innerText=quantities[i];
-}
+        function closeModal() { document.getElementById('orderModal').style.display = 'none'; }
 
-function addCart(i){
-const p=products[i];
-cart[p.name]=(cart[p.name]||0)+quantities[i];
-renderCart();
-}
+        function sendToWhatsApp() {
+            let m = "*ELTİLERİN MUTFAĞI SİPARİŞİ*\n--------------------------\n";
+            let t = 0;
+            Object.keys(cart).forEach(n => {
+                const s = cart[n].qty * cart[n].price;
+                t += s;
+                m += `✅ ${cart[n].qty} Adet/KG - ${n}\n`;
+            });
+            m += `--------------------------\n*TOPLAM: ${t} ₺*`;
+            window.location.href = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(m)}`;
+        }
 
-function renderCart(){
-const list=document.getElementById("cartList");
-list.innerHTML="";
-let total=0;
-for(let n in cart){
-const p=products.find(x=>x.name===n);
-const t=cart[n]*p.price;
-total+=t;
-list.innerHTML+=`<li>${n} (${cart[n]} ${p.unit}) = ${t} ₺</li>`;
-}
-document.getElementById("total").innerText="Toplam: "+total+" ₺";
-}
-
-function sendWhatsApp(){
-let msg="Merhaba, sipariş vermek istiyorum.%0A";
-let total=0;
-for(let n in cart){
-const p=products.find(x=>x.name===n);
-const t=cart[n]*p.price;
-total+=t;
-msg+=`${n} (${cart[n]} ${p.unit}) = ${t} ₺%0A`;
-}
-msg+=`Toplam: ${total} ₺`;
-window.open("https://wa.me/905305956681?text="+msg,"_blank");
-}
-</script>
-
+        window.onload = initMenu;
+    </script>
 </body>
 </html>
+
+
